@@ -60,6 +60,7 @@
 
 /*
  * 哈希表节点
+ * 每个dictEntry结构都保存着一个键值对
  */
 typedef struct dictEntry {
     
@@ -67,6 +68,7 @@ typedef struct dictEntry {
     void *key;
 
     // 值
+    // 其中键值对的值可以是一个指针，或者是一个 uint64_t 整数，又或者一个 int64_t 整数
     union {
         void *val;
         uint64_t u64;
@@ -74,6 +76,7 @@ typedef struct dictEntry {
     } v;
 
     // 指向下个哈希表节点，形成链表
+    // 以此来解决键冲突（collision）的问题（拉链法）
     struct dictEntry *next;
 
 } dictEntry;
@@ -115,12 +118,15 @@ typedef struct dictType {
 typedef struct dictht {
     
     // 哈希表数组
+    // table 属性是一个数组，数组中的每个元素都是一个指向
+    // dictEntry结构的指针
+    // #define DICT_HT_INITIAL_SIZE     4
     dictEntry **table;
 
-    // 哈希表大小
+    // 哈希表大小 table，数组的大小
     unsigned long size;
     
-    // 哈希表大小掩码，用于计算索引值
+    // 哈希表大小掩码，用于计算索引值；和哈希值一起决定一个键应该被放到table数组的哪个索引上面
     // 总是等于 size - 1
     unsigned long sizemask;
 
@@ -134,16 +140,20 @@ typedef struct dictht {
  */
 typedef struct dict {
 
-    // 类型特定函数
+    // 类型特定函数；
+    // 每个dictType结构保存了一簇用于操作特定类型键值对的函数
     dictType *type;
 
     // 私有数据
+    // 保存了需要传给那些类型特定函数的可选参数
     void *privdata;
 
     // 哈希表
+    // 一般情况下，字典只使用 ht[0] 哈希表
+    // ht[1]哈希表只会在对 ht[0] 哈希表进行rehash时使用
     dictht ht[2];
 
-    // rehash 索引
+    // rehash 索引，记录了rehash目前的进度
     // 当 rehash 不在进行时，值为 -1
     int rehashidx; /* rehashing not in progress if rehashidx == -1 */
 
@@ -235,19 +245,27 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
         (key1) == (key2))
 
 // 计算给定键的哈希值
+// 当字典被用作数据库的底层实现，或者哈希键的底层实现时，Redis使用MurmurHash2算法来计算键的哈希值。
 #define dictHashKey(d, key) (d)->type->hashFunction(key)
+
 // 返回获取给定节点的键
 #define dictGetKey(he) ((he)->key)
+
 // 返回获取给定节点的值
 #define dictGetVal(he) ((he)->v.val)
+
 // 返回获取给定节点的有符号整数值
 #define dictGetSignedIntegerVal(he) ((he)->v.s64)
+
 // 返回给定节点的无符号整数值
 #define dictGetUnsignedIntegerVal(he) ((he)->v.u64)
+
 // 返回给定字典的大小
 #define dictSlots(d) ((d)->ht[0].size+(d)->ht[1].size)
+
 // 返回字典的已有节点数量
 #define dictSize(d) ((d)->ht[0].used+(d)->ht[1].used)
+
 // 查看字典是否正在 rehash
 #define dictIsRehashing(ht) ((ht)->rehashidx != -1)
 
