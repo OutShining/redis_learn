@@ -64,6 +64,7 @@ typedef struct listIter {
 
 /*
  * 双端链表结构
+ * 可以通过list结构的dup、free、match三个属性为节点值设置类型特定函数
  */
 typedef struct list {
 
@@ -73,6 +74,7 @@ typedef struct list {
     // 表尾节点
     listNode *tail;
 
+    // *func 表示函数指针
     // 节点值复制函数
     void *(*dup)(void *ptr);
 

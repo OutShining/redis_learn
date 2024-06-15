@@ -249,6 +249,7 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
 void listDelNode(list *list, listNode *node)
 {
     // 调整前置节点的指针
+    // 如果 node->prev 不为 null，则说明 node 不是 head
     if (node->prev)
         node->prev->next = node->next;
     else
@@ -291,6 +292,7 @@ listIter *listGetIterator(list *list, int direction)
     if ((iter = zmalloc(sizeof(*iter))) == NULL) return NULL;
 
     // 根据迭代方向，设置迭代器的起始节点
+    // AL_START_HEAD == 0
     if (direction == AL_START_HEAD)
         iter->next = list->head;
     else

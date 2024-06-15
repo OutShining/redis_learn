@@ -189,6 +189,7 @@ size_t zmalloc_size(void *ptr) {
 }
 #endif
 
+// HAVE_MALLOC_SIZE 已定义为 1
 void zfree(void *ptr) {
 #ifndef HAVE_MALLOC_SIZE
     void *realptr;

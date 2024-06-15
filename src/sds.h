@@ -42,7 +42,7 @@
 /*
  * 类型别名，用于指向 sdshdr 的 buf 属性
  */
-typedef char *sds;
+typedef char* sds;
 
 /*
  * 保存字符串对象的结构

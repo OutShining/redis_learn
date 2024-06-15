@@ -243,7 +243,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
 
     // 根据新长度，为 s 分配新空间所需的大小
     if (newlen < SDS_MAX_PREALLOC)
-        // 如果新长度小于 SDS_MAX_PREALLOC 
+        // 如果新长度小于 SDS_MAX_PREALLOC, (1024*1024)
         // 那么为它分配两倍于所需长度的空间
         newlen *= 2;
     else
@@ -255,7 +255,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
     // 内存不足，分配失败，返回
     if (newsh == NULL) return NULL;
 
-    // 更新 sds 的空余长度
+    // 更新 sds 的空余长度，因为这个时候并没有做拼接操作，所以仍然返回减去旧字符串的长度
     newsh->free = newlen - len;
 
     // 返回 sds
@@ -852,6 +852,7 @@ sds sdstrim(sds s, const char *cset) {
     ep = end = s+sdslen(s)-1;
 
     // 修剪, T = O(N^2)
+    // strchr(char* str, int ch) 查找 ch 在 str 中第一次出现的位置
     while(sp <= end && strchr(cset, *sp)) sp++;
     while(ep > start && strchr(cset, *ep)) ep--;
 
