@@ -401,12 +401,21 @@ typedef long long mstime_t; /* millisecond time type. */
 typedef struct redisObject {
 
     // 类型
+    // varName:bitsCount
+    /*
+     #define REDIS_STRING 0
+     #define REDIS_LIST 1
+     #define REDIS_SET 2
+     #define REDIS_ZSET 3
+     #define REDIS_HASH 4
+     */
     unsigned type:4;
 
     // 编码
     unsigned encoding:4;
 
     // 对象最后一次被访问的时间
+    // 前面两个属性 4 + 4 = 8 bits，这里用了 24 bits，是因为 24 + 8 = 32 bits = 4 Bytes，用于内存对齐
     unsigned lru:REDIS_LRU_BITS; /* lru time (relative to server.lruclock) */
 
     // 引用计数
@@ -715,22 +724,39 @@ struct sharedObjectsStruct {
  */
 typedef struct zskiplistNode {
 
-    // 成员对象
+    /*
+     成员对象
+
+     在同一个跳跃表中，各个节点保存的成员对象必须是唯一的
+     但是多个节点保存的分值却可以是相同的：分值相同的节点将按照成员对象在字典序中的大小来进行排序
+     成员对象较小的节点会排在前面（靠近表头的方向），而成员对象较大的节点则会排在后面（靠近表尾的方向）
+     */
     robj *obj;
 
     // 分值
     double score;
 
     // 后退指针
+    // 它指向位于当前节点的前一个节点。后退指针在程序从表尾向表头遍历时使用
+    // 并不是同层中的后退，而是最低层的后退
     struct zskiplistNode *backward;
 
-    // 层
+    // 层 L1 L2 L3...；
+    // L1 / level[0] 是保存了全部 node 的链表，span 全是 1
+    // 一般来说，层的数量越多，访问其他节点的速度就越快。
+    // 每创建一个新 zskiplistNode，程序都根据幂次定律（powerlaw，越大的数出现的概率越小）
+    // 随机生成一个介于1和32之间的值作为level数组的大小，这个大小就是层的“高度”。
     struct zskiplistLevel {
 
-        // 前进指针
+        // 前进指针 用于访问位于表尾方向的其他节点
+        // 当程序从表头向表尾进行遍历时，访问会沿着层的前进指针进行
         struct zskiplistNode *forward;
 
-        // 跨度
+        // 跨度 记录了前进指针所指向节点和当前节点的距离
+        // 指向NULL的所有前进指针的跨度都为0，因为它们没有连向任何节点
+
+        // 跨度实际上是用来计算排位（rank）的：在查找某个节点的过程中
+        // 将沿途访问过的所有层的跨度累计起来，得到的结果就是目标节点在跳跃表中的排位
         unsigned int span;
 
     } level[];
@@ -746,6 +772,7 @@ typedef struct zskiplist {
     struct zskiplistNode *header, *tail;
 
     // 表中节点的数量
+    // 跳跃表目前包含节点的数量（表头节点不计算在内）
     unsigned long length;
 
     // 表中层数最大的节点的层数
