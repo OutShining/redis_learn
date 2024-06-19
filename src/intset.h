@@ -41,6 +41,19 @@ typedef struct intset {
     uint32_t length;
 
     // 保存元素的数组
+    /*
+     虽然intset结构将contents属性声明为int8_t类型的数组，
+     但实际上contents数组并不保存任何int8_t类型的值，contents数组的真正类型取决于encoding属性的值：
+     如果encoding属性的值为INTSET_ENC_INT16，那么contents就是一个int16_t类型的数组
+     数组里的每个项都是一个int16_t类型的整数值
+
+     各个项在数组中按值的大小从小到大有序地排列，并且数组中不包含任何重复项
+
+     升级：当向一个底层为int16_t数组的整数集合添加一个int64_t类型的整数值时，整数集合已有的所有元素都会被转换成int64_t类型
+     整数集合不支持降级操作，一旦对数组进行了升级，编码就会一直保持升级后的状态
+
+     size = sizeof(type) * length
+     */
     int8_t contents[];
 
 } intset;

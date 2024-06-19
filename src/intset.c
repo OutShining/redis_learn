@@ -392,7 +392,7 @@ static void intsetMoveTail(intset *is, uint32_t from, uint32_t to) {
  */
 intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
 
-    // 计算编码 value 所需的长度
+    // 计算编码 value 所需的长度，方式：简单判断是否超过了 int16_t, int32_t, int64_t 的最大/最小表示范围
     uint8_t valenc = _intsetValueEncoding(value);
     uint32_t pos;
 
